@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Daily Jigsaw Puzzle – Clean Edges</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily Jigsaw Puzzle – Enhanced Clean Edges</title>
   <style>
     body {
       font-family: sans-serif;
@@ -10,30 +11,11 @@
       margin: 20px;
     }
 
-    #puzzle-container {
-      /* Big enough to show bumps without cutting them off:
-         baseSize + 2*bumpSize = 400 + 2*20 = 440px */
-      width: 440px;
-      height: 440px;
-      margin: 0 auto;
-      position: relative;
-      border: 2px solid #333;
-      background: #fff; /* White so no dark gaps appear behind pieces */
-      overflow: hidden;
+    h1 {
+      margin-bottom: 10px;
     }
 
-    .piece {
-      position: absolute;
-      cursor: pointer;
-      /* Remove default margins, etc. */
-      padding: 0;
-      margin: 0;
-    }
-
-    .selected {
-      outline: 3px solid red;
-    }
-
+    /* Reference image (thumbnail) */
     #reference {
       margin-bottom: 10px;
     }
@@ -42,48 +24,112 @@
       box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
     }
 
-    #message {
-      margin-top: 20px;
+    /* Timer & message areas */
+    #timer, #message {
+      margin-top: 10px;
       font-size: 1.2em;
-      color: green;
     }
 
-    #instructions {
-      margin-bottom: 10px;
-      font-style: italic;
+    /* Puzzle container:
+       400 + 2*20 = 440px wide/height to accommodate jigsaw bumps */
+    #puzzle-container {
+      position: relative;
+      width: 440px;
+      height: 440px;
+      margin: 0 auto;
+      border: 2px solid #333;
+      background: #eee;
+      overflow: hidden;
+    }
+
+    /* Each jigsaw piece is an absolutely positioned canvas */
+    canvas.piece {
+      position: absolute;
+      cursor: grab;
+      transition: left 0.2s, top 0.2s;
+    }
+    /* Dragging visual feedback */
+    canvas.dragging {
+      opacity: 0.7;
+      cursor: grabbing;
+    }
+    /* Pieces that are in the correct place get a green glow */
+    canvas.correct {
+      box-shadow: 0 0 8px green;
+    }
+
+    /* Confetti container (overlay) */
+    #confetti-container {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      opacity: 0.9;
+      animation: confettiFall 2s linear forwards;
+    }
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(300px) rotate(360deg);
+        opacity: 0;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Daily Jigsaw Puzzle – Clean Edges</h1>
+  <h1>Daily Jigsaw Puzzle – Enhanced Clean Edges</h1>
 
+  <!-- Reference image for the puzzle -->
   <div id="reference">
     <strong>Reference:</strong><br>
     <img id="reference-image" alt="Reference puzzle" width="100" height="100">
   </div>
 
-  <div id="instructions">Click on two pieces to swap them.</div>
-  <div id="puzzle-container"></div>
+  <!-- Timer display -->
+  <div id="timer">Time: 0s</div>
+
+  <!-- Puzzle container -->
+  <div id="puzzle-container">
+    <!-- Confetti overlay -->
+    <div id="confetti-container"></div>
+  </div>
+
+  <!-- Completion message -->
   <div id="message"></div>
 
   <script>
-    // -----------------------------------------------------------------------
+    // ------------------------------------------------------------------
     // 1) CONFIGURATION
-    // -----------------------------------------------------------------------
-    const baseSize = 400;    // The puzzle area (without bumps)
-    const rows = 4, cols = 4; 
-    const pieceW = baseSize / cols;   // e.g. 100px per piece
-    const pieceH = baseSize / rows;   // e.g. 100px per piece
-    const bumpSize = 20;     // size of the jigsaw “bump”
-    // The container will be 400 + 2*20 = 440px to fit edges fully.
+    // ------------------------------------------------------------------
+    const rows = 4, cols = 4;          // Puzzle grid dimensions
+    const baseSize = 400;              // The puzzle area (without bumps)
+    const bumpSize = 20;               // Bump/tab size
+    const pieceWidth = baseSize / cols; 
+    const pieceHeight = baseSize / rows;
+    const containerSize = baseSize + 2 * bumpSize; // 440 for 4×4 with 20px bumps
 
-    // Use today's date (YYYY-MM-DD) as a seed to ensure the same puzzle for all.
-    const dateStr = new Date().toISOString().split('T')[0];
+    // For localStorage keys (puzzle state + timer)
+    const storageKey = "enhancedPuzzleState-";
+    const timerKey = "enhancedPuzzleTimer-";
+
+    // ------------------------------------------------------------------
+    // 2) SEED FOR DAILY PUZZLE
+    //    We'll use today's date (YYYY-MM-DD) so everyone gets the same puzzle each day.
+    // ------------------------------------------------------------------
+    const todayStr = new Date().toISOString().split('T')[0]; 
     let seed = 0;
-    for (let i = 0; i < dateStr.length; i++) {
-      seed += dateStr.charCodeAt(i);
+    for (let i = 0; i < todayStr.length; i++) {
+      seed += todayStr.charCodeAt(i);
     }
-    // Simple seeded random (mulberry32).
     function mulberry32(a) {
       return function() {
         let t = a += 0x6D2B79F5;
@@ -94,10 +140,31 @@
     }
     const random = mulberry32(seed);
 
-    // -----------------------------------------------------------------------
-    // 2) GENERATE A PROCEDURAL IMAGE (GRADIENT + RANDOM CIRCLES)
-    // -----------------------------------------------------------------------
-    function generateImage() {
+    // ------------------------------------------------------------------
+    // 3) TIMER (WITH LOCAL STORAGE PERSISTENCE)
+    // ------------------------------------------------------------------
+    let startTime = Date.now();
+    let elapsedTime = 0;
+    const timerDisplay = document.getElementById("timer");
+
+    // If we have a saved timer value, resume from it
+    const savedElapsed = localStorage.getItem(timerKey + todayStr);
+    if (savedElapsed) {
+      elapsedTime = parseInt(savedElapsed, 10);
+      startTime = Date.now() - elapsedTime;
+    }
+
+    const timerInterval = setInterval(() => {
+      elapsedTime = Date.now() - startTime;
+      timerDisplay.innerText = "Time: " + Math.floor(elapsedTime / 1000) + "s";
+      // Update local storage
+      localStorage.setItem(timerKey + todayStr, elapsedTime);
+    }, 1000);
+
+    // ------------------------------------------------------------------
+    // 4) GENERATE THE BASE PUZZLE IMAGE (GRADIENT + RANDOM CIRCLES)
+    // ------------------------------------------------------------------
+    function generateBaseImage() {
       const canvas = document.createElement("canvas");
       canvas.width = baseSize;
       canvas.height = baseSize;
@@ -122,67 +189,54 @@
         ctx.fillStyle = `hsla(${Math.floor(random()*360)}, 70%, 50%, 0.5)`;
         ctx.fill();
       }
-
       return canvas;
     }
-    const baseImageCanvas = generateImage();
-    // Display a small reference thumbnail.
+    const baseImageCanvas = generateBaseImage();
     document.getElementById("reference-image").src = baseImageCanvas.toDataURL();
 
-    // -----------------------------------------------------------------------
-    // 3) DEFINE JIGSAW PIECE EDGES
-    //    0 = flat, +1 = tab (bump out), -1 = blank (bump in)
-    // -----------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // 5) DEFINE JIGSAW EDGES FOR EACH PIECE
+    //    0 = flat, +1 = tab (bump out), -1 = blank (bump in).
+    // ------------------------------------------------------------------
     const pieces = [];
     for (let r = 0; r < rows; r++) {
       pieces[r] = [];
       for (let c = 0; c < cols; c++) {
-        const piece = { row: r, col: c, currentRow: r, currentCol: c, edges: {} };
-
+        const piece = { row: r, col: c, currentRow: r, currentCol: c, edges: {}, locked: false };
         // Top edge
         if (r === 0) {
           piece.edges.top = 0;
         } else {
-          // Must match the piece above (inverse of its bottom)
           piece.edges.top = -pieces[r - 1][c].edges.bottom;
         }
         // Left edge
         if (c === 0) {
           piece.edges.left = 0;
         } else {
-          // Must match the piece to the left (inverse of its right)
           piece.edges.left = -pieces[r][c - 1].edges.right;
         }
         // Right edge
         if (c === cols - 1) {
           piece.edges.right = 0;
         } else {
-          piece.edges.right = (random() > 0.5) ? 1 : -1;
+          piece.edges.right = (random() > 0.5 ? 1 : -1);
         }
         // Bottom edge
         if (r === rows - 1) {
           piece.edges.bottom = 0;
         } else {
-          piece.edges.bottom = (random() > 0.5) ? 1 : -1;
+          piece.edges.bottom = (random() > 0.5 ? 1 : -1);
         }
         pieces[r][c] = piece;
       }
     }
 
-    // -----------------------------------------------------------------------
-    // 4) CUT THE IMAGE FOR EACH PIECE (OFFSCREEN CANVAS)
-    // -----------------------------------------------------------------------
-    // We'll create a piece canvas sized (pieceW + 2*bumpSize) by (pieceH + 2*bumpSize)
-    // so the jigsaw tabs fit. We'll offset the shape so the "flat" portion is at (bumpSize,bumpSize).
-    // Then we draw the portion of the base image that corresponds to (r, c).
-    //
-    // This ensures the edges match up perfectly, because each piece is literally cut
-    // from the big image with complementary edges.
-    // -----------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // 6) DRAW THE JIGSAW SHAPE FOR EACH PIECE ON AN OFFSCREEN CANVAS
+    //    THEN RENDER THAT “CUT OUT” IMAGE ON A <canvas> IN THE DOM
+    // ------------------------------------------------------------------
     function drawJigsawShape(ctx, edges, w, h, bump) {
-      // We'll draw from (0,0) to (w,h), but interpret edges for the top/left as well.
       ctx.beginPath();
-
       // Top edge
       const topThird = w / 3;
       ctx.moveTo(0, 0);
@@ -235,126 +289,262 @@
       ctx.closePath();
     }
 
-    // -----------------------------------------------------------------------
-    // 5) CREATE THE ACTUAL DOM ELEMENTS FOR PIECES AND SCRAMBLE THEIR POSITIONS
-    // -----------------------------------------------------------------------
-    // We'll do a simple approach: build a list of all positions, shuffle them,
-    // then assign them to pieces as "currentRow"/"currentCol".
-    // -----------------------------------------------------------------------
-    const positions = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        positions.push({ row: r, col: c });
+    // ------------------------------------------------------------------
+    // 7) LOAD / SCRAMBLE POSITIONS
+    //    We either load from local storage or generate a scrambled layout.
+    // ------------------------------------------------------------------
+    let savedState = localStorage.getItem(storageKey + todayStr);
+    let scramblePositions = [];
+    if (savedState) {
+      // We have a saved puzzle state
+      scramblePositions = JSON.parse(savedState);
+    } else {
+      // Build an array of all row/col pairs
+      const positions = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          positions.push({ row: r, col: c });
+        }
       }
-    }
-    // Shuffle
-    for (let i = positions.length - 1; i > 0; i--) {
-      const j = Math.floor(random() * (i + 1));
-      [positions[i], positions[j]] = [positions[j], positions[i]];
+      // Shuffle with our seeded random
+      for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+      }
+      // We'll store them in the same format as savedState
+      scramblePositions = positions.map((p, index) => {
+        // Each piece (r,c) in reading order gets positions[index]
+        const r = Math.floor(index / cols);
+        const c = index % cols;
+        return {
+          r: r, c: c,
+          currentRow: p.row,
+          currentCol: p.col
+        };
+      });
     }
 
+    // ------------------------------------------------------------------
+    // 8) BUILD THE PIECES AND PLACE THEM IN THE DOM
+    // ------------------------------------------------------------------
     const container = document.getElementById("puzzle-container");
-    const pieceList = []; // Flattened array for easy iteration
+    const confettiContainer = document.getElementById("confetti-container");
+    const piecesArray = [];
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const piece = pieces[r][c];
 
-        // Create an offscreen canvas to "cut out" the piece.
+        // If we have a saved (or scrambled) position, apply it
+        const match = scramblePositions.find(p => p.r === r && p.c === c);
+        if (match) {
+          piece.currentRow = match.currentRow;
+          piece.currentCol = match.currentCol;
+        }
+
+        // Create an offscreen canvas to draw the cut-out piece
         const offCanvas = document.createElement("canvas");
-        offCanvas.width = pieceW + 2*bumpSize;
-        offCanvas.height = pieceH + 2*bumpSize;
-        const ctx = offCanvas.getContext("2d");
+        offCanvas.width = pieceWidth + 2*bumpSize;
+        offCanvas.height = pieceHeight + 2*bumpSize;
+        const offCtx = offCanvas.getContext("2d");
 
-        // Translate so the top-left corner of the piece shape is at (bumpSize,bumpSize).
-        ctx.save();
-        ctx.translate(bumpSize, bumpSize);
-        drawJigsawShape(ctx, piece.edges, pieceW, pieceH, bumpSize);
-        ctx.clip();
-        // Draw the correct portion of the base image at (0,0).
-        ctx.drawImage(
+        // Shift so the shape is drawn at (bumpSize,bumpSize)
+        offCtx.save();
+        offCtx.translate(bumpSize, bumpSize);
+        drawJigsawShape(offCtx, piece.edges, pieceWidth, pieceHeight, bumpSize);
+        offCtx.clip();
+        // Draw the correct portion of the base image
+        offCtx.drawImage(
           baseImageCanvas,
-          c * pieceW, // source x
-          r * pieceH, // source y
-          pieceW, pieceH,
+          c * pieceWidth, r * pieceHeight,
+          pieceWidth, pieceHeight,
           0, 0,
-          pieceW, pieceH
+          pieceWidth, pieceHeight
         );
-        ctx.restore();
+        offCtx.restore();
 
-        // Now we have a piece cut out. We'll put it in an actual <canvas> in the DOM.
-        const pieceCanvas = document.createElement("canvas");
-        pieceCanvas.width = offCanvas.width;
-        pieceCanvas.height = offCanvas.height;
-        pieceCanvas.className = "piece";
-        const pieceCtx = pieceCanvas.getContext("2d");
-        pieceCtx.drawImage(offCanvas, 0, 0);
+        // Create the actual DOM canvas for the piece
+        const domCanvas = document.createElement("canvas");
+        domCanvas.width = offCanvas.width;
+        domCanvas.height = offCanvas.height;
+        domCanvas.className = "piece";
+        const domCtx = domCanvas.getContext("2d");
+        domCtx.drawImage(offCanvas, 0, 0);
 
-        // Scrambled position from the shuffled array
-        const pos = positions.pop();
-        piece.currentRow = pos.row;
-        piece.currentCol = pos.col;
+        piece.canvas = domCanvas;
+        piecesArray.push(piece);
+        container.appendChild(domCanvas);
 
-        // Place it in the container. Because each piece is bigger than pieceW/pieceH,
-        // we offset by -bumpSize so it lines up nicely in the puzzle.
-        pieceCanvas.style.left = (piece.currentCol * pieceW - bumpSize) + "px";
-        pieceCanvas.style.top  = (piece.currentRow * pieceH - bumpSize) + "px";
+        // Position it according to currentRow/currentCol
+        positionPiece(piece);
 
-        // Save reference for swapping
-        piece.canvas = pieceCanvas;
-        pieceList.push(piece);
-
-        container.appendChild(pieceCanvas);
-
-        // Add click handler for swapping
-        pieceCanvas.addEventListener("click", () => pieceClicked(piece));
+        // Add drag events
+        addDragEvents(piece);
       }
     }
 
-    let firstSelected = null;
-    function pieceClicked(piece) {
-      if (!firstSelected) {
-        firstSelected = piece;
-        piece.canvas.classList.add("selected");
-      } else if (firstSelected === piece) {
-        // Deselect if the same piece is clicked again
-        piece.canvas.classList.remove("selected");
-        firstSelected = null;
-      } else {
-        // Swap positions
-        swapPieces(firstSelected, piece);
-        firstSelected.canvas.classList.remove("selected");
-        firstSelected = null;
+    // ------------------------------------------------------------------
+    // 9) DRAG-AND-DROP LOGIC WITH GRID SNAPPING
+    //    If the target cell is occupied, swap pieces.
+    // ------------------------------------------------------------------
+    function addDragEvents(piece) {
+      let offsetX = 0, offsetY = 0;
+      let isDragging = false;
+
+      piece.canvas.addEventListener("pointerdown", (e) => {
+        // If locked (correctly placed), skip
+        if (piece.locked) return;
+        isDragging = true;
+        piece.canvas.classList.add("dragging");
+        piece.canvas.setPointerCapture(e.pointerId);
+
+        // Calculate offset within the piece
+        const rect = piece.canvas.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+
+      piece.canvas.addEventListener("pointermove", (e) => {
+        if (!isDragging) return;
+        const containerRect = container.getBoundingClientRect();
+        const newLeft = e.clientX - containerRect.left - offsetX;
+        const newTop  = e.clientY - containerRect.top - offsetY;
+        piece.canvas.style.left = newLeft + "px";
+        piece.canvas.style.top  = newTop + "px";
+      });
+
+      piece.canvas.addEventListener("pointerup", (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        piece.canvas.classList.remove("dragging");
+
+        // Snap to the nearest grid cell
+        const leftPos = parseInt(piece.canvas.style.left);
+        const topPos  = parseInt(piece.canvas.style.top);
+
+        let targetCol = Math.round((leftPos + bumpSize) / pieceWidth);
+        let targetRow = Math.round((topPos  + bumpSize) / pieceHeight);
+
+        // Clamp to valid range
+        targetCol = Math.max(0, Math.min(cols - 1, targetCol));
+        targetRow = Math.max(0, Math.min(rows - 1, targetRow));
+
+        // Check if another piece occupies that cell
+        const other = piecesArray.find(p => 
+          p !== piece &&
+          p.currentRow === targetRow &&
+          p.currentCol === targetCol
+        );
+
+        if (other) {
+          // Swap
+          const tmpRow = piece.currentRow;
+          const tmpCol = piece.currentCol;
+          piece.currentRow = other.currentRow;
+          piece.currentCol = other.currentCol;
+          other.currentRow = tmpRow;
+          other.currentCol = tmpCol;
+
+          positionPiece(piece);
+          positionPiece(other);
+
+          updatePieceHighlight(piece);
+          updatePieceHighlight(other);
+        } else {
+          // Just snap into place
+          piece.currentRow = targetRow;
+          piece.currentCol = targetCol;
+          positionPiece(piece);
+          updatePieceHighlight(piece);
+        }
+
+        // Save state
+        savePuzzleState();
         // Check if solved
-        if (checkSolved()) {
-          document.getElementById("message").innerText = "Congratulations! Puzzle solved!";
-        }
+        if (checkSolved()) puzzleSolved();
+      });
+    }
+
+    // Position a piece’s canvas based on currentRow/Col
+    function positionPiece(piece) {
+      piece.canvas.style.left = (piece.currentCol * pieceWidth) + "px";
+      piece.canvas.style.top  = (piece.currentRow * pieceHeight) + "px";
+    }
+
+    // ------------------------------------------------------------------
+    // 10) VISUAL HIGHLIGHT IF A PIECE IS CORRECT
+    // ------------------------------------------------------------------
+    function updatePieceHighlight(piece) {
+      if (piece.currentRow === piece.row && piece.currentCol === piece.col) {
+        piece.canvas.classList.add("correct");
+        piece.locked = true; // we won't let it drag again
+      } else {
+        piece.canvas.classList.remove("correct");
+        piece.locked = false;
       }
     }
 
-    function swapPieces(p1, p2) {
-      const tmpRow = p1.currentRow;
-      const tmpCol = p1.currentCol;
-      p1.currentRow = p2.currentRow;
-      p1.currentCol = p2.currentCol;
-      p2.currentRow = tmpRow;
-      p2.currentCol = tmpCol;
-
-      // Update their on-screen positions
-      p1.canvas.style.left = (p1.currentCol * pieceW - bumpSize) + "px";
-      p1.canvas.style.top  = (p1.currentRow * pieceH - bumpSize) + "px";
-      p2.canvas.style.left = (p2.currentCol * pieceW - bumpSize) + "px";
-      p2.canvas.style.top  = (p2.currentRow * pieceH - bumpSize) + "px";
+    // ------------------------------------------------------------------
+    // 11) SAVE / LOAD STATE
+    // ------------------------------------------------------------------
+    function savePuzzleState() {
+      const stateArray = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const piece = pieces[r][c];
+          stateArray.push({
+            r: r, c: c,
+            currentRow: piece.currentRow,
+            currentCol: piece.currentCol
+          });
+        }
+      }
+      localStorage.setItem(storageKey + todayStr, JSON.stringify(stateArray));
     }
 
+    // ------------------------------------------------------------------
+    // 12) CHECK SOLVED
+    // ------------------------------------------------------------------
     function checkSolved() {
-      for (let piece of pieceList) {
-        if (piece.currentRow !== piece.row || piece.currentCol !== piece.col) {
-          return false;
-        }
-      }
-      return true;
+      return piecesArray.every(p =>
+        p.currentRow === p.row && p.currentCol === p.col
+      );
     }
+
+    // ------------------------------------------------------------------
+    // 13) PUZZLE SOLVED -> STOP TIMER, CONFETTI, MESSAGE
+    // ------------------------------------------------------------------
+    function puzzleSolved() {
+      clearInterval(timerInterval);
+      const seconds = Math.floor(elapsedTime / 1000);
+      document.getElementById("message").innerText =
+        "Congratulations! Puzzle solved in " + seconds + " seconds.";
+      launchConfetti();
+    }
+
+    // ------------------------------------------------------------------
+    // 14) CONFETTI ANIMATION
+    // ------------------------------------------------------------------
+    function launchConfetti() {
+      const colors = ["#FFC107", "#E91E63", "#03A9F4", "#4CAF50", "#FF5722"];
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * containerSize + "px";
+        confetti.style.animationDelay = Math.random() * 1 + "s";
+        confettiContainer.appendChild(confetti);
+        confetti.addEventListener("animationend", () => {
+          confettiContainer.removeChild(confetti);
+        });
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 15) INITIAL HIGHLIGHT CHECK (in case some pieces start correct)
+    // ------------------------------------------------------------------
+    piecesArray.forEach(updatePieceHighlight);
+
   </script>
 </body>
 </html>

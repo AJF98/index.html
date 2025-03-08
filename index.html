@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Daily Jigsaw Challenge</title>
+  <!-- Open Graph meta tags for social sharing -->
+  <meta property="og:title" content="Daily Jigsaw Challenge" />
+  <meta property="og:description" content="A daily jigsaw puzzle for everyone. New puzzle every day!" />
+  <meta property="og:type" content="website" />
   <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <style>
     :root {
       --primary-color: #3f51b5;
@@ -15,7 +23,7 @@
       --container-bg: #ffffff;
       --text-color: #333333;
       --border-radius: 12px;
-      --shadow: 0 8px 16px rgba(0,0,0,0.1);
+      --shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
     * {
       box-sizing: border-box;
@@ -32,6 +40,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
     }
     .container {
       max-width: 800px;
@@ -61,7 +70,7 @@
       background-color: var(--container-bg);
       padding: 10px 15px;
       border-radius: var(--border-radius);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       min-width: 100px;
     }
     .stat-box h3 {
@@ -81,48 +90,6 @@
     .countdown {
       color: var(--text-color);
       font-size: 0.9rem;
-    }
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
-    }
-    .btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: var(--border-radius);
-      padding: 8px 16px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 600;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    .btn-accent {
-      background-color: var(--accent-color);
-    }
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 0.8rem;
-    }
-    .btn-outline {
-      background-color: transparent;
-      border: 2px solid var(--primary-color);
-      color: var(--primary-color);
-    }
-    #difficultySelect {
-      padding: 8px 16px;
-      border-radius: var(--border-radius);
-      border: 1px solid #ddd;
-      font-family: 'Montserrat', sans-serif;
-      background-color: var(--container-bg);
     }
     .hint-container {
       margin-bottom: 15px;
@@ -145,7 +112,7 @@
       left: 0;
       width: 120px;
       height: 120px;
-      background-color: rgba(0,0,0,0.5);
+      background-color: rgba(0, 0, 0, 0.5);
       color: white;
       display: flex;
       align-items: center;
@@ -193,79 +160,46 @@
       color: var(--success-color);
       min-height: 30px;
     }
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0;
-      top: 0;
+    /* Leaderboard styling */
+    #leaderboardContainer {
+      margin-top: 20px;
+      text-align: left;
       width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.7);
-      align-items: center;
-      justify-content: center;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 30px;
     }
-    .modal-content {
-      background-color: var(--container-bg);
-      padding: 30px;
-      border-radius: var(--border-radius);
+    #leaderboardContainer h3 {
       text-align: center;
-      max-width: 90%;
-      width: 400px;
-      position: relative;
-      box-shadow: var(--shadow);
-    }
-    .modal h2 {
+      margin-bottom: 10px;
       color: var(--primary-color);
-      margin-bottom: 15px;
     }
-    .modal p {
-      margin-bottom: 20px;
-    }
-    .modal .btn {
-      margin-top: 15px;
-    }
-    .stats {
-      margin: 15px 0;
-      text-align: left;
-      border-top: 1px solid #eee;
-      padding-top: 15px;
-    }
-    .stats p {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .stats span {
-      font-weight: 600;
-    }
-    /* Shared stats area */
-    .shared-stats {
-      margin-top: 20px;
-      border-top: 1px solid #eee;
-      padding-top: 15px;
-    }
-    .share-button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    /* Leaderboard (placeholder styling) */
-    .leaderboard {
+    #leaderboardContainer table {
       width: 100%;
-      margin-top: 20px;
-      text-align: left;
       border-collapse: collapse;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: var(--border-radius);
+      overflow: hidden;
     }
-    .leaderboard th, .leaderboard td {
-      padding: 10px;
+    #leaderboardContainer th, #leaderboardContainer td {
+      padding: 12px 8px;
       border-bottom: 1px solid #eee;
     }
-    .leaderboard th {
-      background-color: #f5f5f5;
-      color: var(--primary-color);
+    #leaderboardContainer th {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+    #leaderboardContainer tr:nth-child(even) {
+      background-color: rgba(0,0,0,0.02);
+    }
+    #leaderboardContainer tr:last-child td {
+      border-bottom: none;
+    }
+    #leaderboardContainer tr.highlight {
+      background-color: rgba(63, 81, 181, 0.1);
+      font-weight: 600;
     }
     /* Confetti */
     #confetti-container {
@@ -295,18 +229,149 @@
         opacity: 0;
       }
     }
-    /* Responsive */
-    @media (max-width: 600px) {
-      .container {
-        padding: 0;
-      }
-      .game-stats {
-        flex-direction: row;
-      }
-      .stat-box {
-        padding: 8px 12px;
-        min-width: 80px;
-      }
+    /* Completion Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: var(--container-bg);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .modal h2 {
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+    .modal p {
+      margin-bottom: 20px;
+    }
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: #303f9f;
+    }
+    .share-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin: 15px 0;
+    }
+    .share-cell {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 4px;
+    }
+    .share-cell.correct {
+      background-color: var(--success-color);
+    }
+    .share-cell.incorrect {
+      background-color: #ccc;
+    }
+    .share-container {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      background-color: #f9f9f9;
+    }
+    .share-emoji-grid {
+      font-size: 1.2rem;
+      margin: 10px 0;
+      letter-spacing: 2px;
+    }
+    /* Profile Area */
+    .profile-area {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+    .profile-btn {
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      padding: 5px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    /* Streak indicator */
+    .streak-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin: 10px 0;
+    }
+    .streak-flame {
+      color: #ff9800;
+      font-size: 1.2rem;
+    }
+    .streak-count {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    /* Stats Modal */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 15px 0;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: #666;
     }
     /* Dark mode toggle */
     .theme-toggle {
@@ -315,6 +380,34 @@
       right: 20px;
       cursor: pointer;
       font-size: 1.5rem;
+    }
+    /* Login Modal */
+    #loginModal .modal-content {
+      max-width: 400px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    /* Timer flash animation */
+    @keyframes timerFlash {
+      0% { color: var(--primary-color); }
+      50% { color: var(--accent-color); }
+      100% { color: var(--primary-color); }
+    }
+    .timer-flash {
+      animation: timerFlash 1s infinite;
     }
     /* Dark theme */
     body.dark-theme {
@@ -325,24 +418,47 @@
       --container-bg: #1e1e1e;
       --text-color: #ffffff;
     }
+    body.dark-theme .share-container {
+      background-color: #2a2a2a;
+      border-color: #333;
+    }
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .game-stats {
+        flex-direction: column;
+        align-items: center;
+      }
+      .stat-box {
+        width: 100%;
+        max-width: 300px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
   <div class="theme-toggle" id="themeToggle">🌙</div>
-  
   <div class="container">
     <header>
       <h1>Daily Jigsaw Challenge</h1>
-      <div class="subheader">A new puzzle every day</div>
+      <div class="subheader">#<span id="puzzleNumber">1</span> - <span id="todayDate">March 8, 2025</span></div>
     </header>
-
+    
+    <div class="profile-area">
+      <div id="userProfileArea">
+        <!-- If not logged in, a Sign In button will appear -->
+      </div>
+    </div>
+    
     <div class="game-stats">
       <div class="stat-box">
         <h3>TIME</h3>
         <p id="timer">00:00</p>
       </div>
       <div class="stat-box">
-        <h3>BEST TIME</h3>
+        <h3>YOUR BEST</h3>
         <p id="bestTime">--:--</p>
       </div>
       <div class="stat-box">
@@ -351,19 +467,15 @@
       </div>
     </div>
 
-    <div class="controls">
-      <button id="resetButton" class="btn">Reset Puzzle</button>
-      <button id="hintButton" class="btn btn-outline">Show Hint</button>
-      <select id="difficultySelect">
-        <option value="2">Easy (2×2)</option>
-        <option value="3">Medium (3×3)</option>
-        <option value="4" selected>Hard (4×4)</option>
-        <option value="5">Expert (5×5)</option>
-      </select>
+    <div class="streak-indicator" id="streakIndicator" style="display: none;">
+      <span class="streak-flame">🔥</span>
+      <span class="streak-count" id="streakCount">0</span>
+      <span>day streak!</span>
     </div>
 
+    <!-- Hint: Reference image -->
     <div class="hint-container">
-      <img id="reference-image" alt="Reference puzzle">
+      <img id="reference-image" alt="Reference puzzle" />
       <div class="hint-overlay" id="hintOverlay">Click for hint</div>
     </div>
 
@@ -371,6 +483,9 @@
     <div id="puzzle-container">
       <div id="confetti-container"></div>
     </div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboardContainer"></div>
 
     <!-- Completion message -->
     <div id="message"></div>
@@ -383,30 +498,98 @@
       <p id="completionMessage">
         You solved today's puzzle in <span id="completionTime">0:00</span>!
       </p>
-      <div class="stats">
-        <p>
-          Today's time: 
-          <span id="modalTime">0:00</span>
-        </p>
-        <p>
-          Your best time: 
-          <span id="modalBestTime">0:00</span>
-        </p>
-        <p>
-          Difficulty: 
-          <span id="modalDifficulty">Hard (4×4)</span>
-        </p>
+      
+      <div class="streak-indicator" id="modalStreakIndicator" style="display: none;">
+        <span class="streak-flame">🔥</span>
+        <span class="streak-count" id="modalStreakCount">0</span>
+        <span>day streak!</span>
       </div>
-      <div class="shared-stats">
-        <button id="shareButton" class="btn share-button">
-          Share Result
-        </button>
+      
+      <div class="share-container">
+        <p>Daily Jigsaw #<span id="shareNumber">1</span> - <span id="completionTime2">0:00</span></p>
+        <div class="share-emoji-grid" id="shareEmoji">🟩🟩🟩🟩<br>🟩🟩🟩🟩<br>🟩🟩🟩🟩<br>🟩🟩🟩🟩</div>
+        <p>jigsawchallenge.com</p>
       </div>
+      
+      <button id="shareButton" class="btn">Share Result</button>
+      <button id="statsButton" class="btn">View Stats</button>
       <button id="closeModalButton" class="btn">Close</button>
+    </div>
+  </div>
+  
+  <!-- Stats Modal -->
+  <div id="statsModal" class="modal">
+    <div class="modal-content">
+      <h2>Your Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-number" id="statPlayed">0</div>
+          <div class="stat-label">Played</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="statWinPercent">0%</div>
+          <div class="stat-label">Win %</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="statCurrentStreak">0</div>
+          <div class="stat-label">Current Streak</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number" id="statMaxStreak">0</div>
+          <div class="stat-label">Max Streak</div>
+        </div>
+      </div>
+      <h3>Time Distribution</h3>
+      <div id="timeDistribution" style="margin: 15px 0;">
+        <!-- Chart or details can be added here -->
+      </div>
+      <h3>Best Times</h3>
+      <div id="bestTimes" style="margin: 15px 0;">
+        <!-- Best times list -->
+      </div>
+      <button id="closeStatsButton" class="btn">Close</button>
+    </div>
+  </div>
+  
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <h2>Sign In</h2>
+      <p>Sign in to track your stats and appear on the leaderboard!</p>
+      <div id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="Enter your email" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" />
+        </div>
+        <button id="signInButton" class="btn">Sign In</button>
+        <button id="signUpButton" class="btn">Sign Up</button>
+      </div>
+      <div id="loginError" style="color: red; margin-top: 10px; display: none;"></div>
+      <p style="margin-top: 15px;"><a href="#" id="forgotPassword">Forgot password?</a></p>
+      <button id="closeLoginButton" class="btn">Cancel</button>
     </div>
   </div>
 
   <script>
+    // -------------------------------------------------------------
+    // Firebase Initialization (Replace with your Firebase config)
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
     // -------------------------------------------------------------
     // THEME SWITCHER
     // -------------------------------------------------------------
@@ -425,29 +608,62 @@
     // DOM ELEMENTS
     // -------------------------------------------------------------
     const container = document.getElementById("puzzle-container");
-    const resetButton = document.getElementById("resetButton");
-    const hintButton = document.getElementById("hintButton");
-    const hintOverlay = document.getElementById("hintOverlay");
-    const difficultySelect = document.getElementById("difficultySelect");
     const timerDisplay = document.getElementById("timer");
     const bestTimeDisplay = document.getElementById("bestTime");
     const countdownDisplay = document.getElementById("countdown");
     const referenceImage = document.getElementById("reference-image");
+    const hintOverlay = document.getElementById("hintOverlay");
     const messageDisplay = document.getElementById("message");
+    const leaderboardContainer = document.getElementById("leaderboardContainer");
+    const puzzleNumberDisplay = document.getElementById("puzzleNumber");
+    const todayDateDisplay = document.getElementById("todayDate");
+    const userProfileArea = document.getElementById("userProfileArea");
+    const streakIndicator = document.getElementById("streakIndicator");
+    const streakCount = document.getElementById("streakCount");
 
+    // Completion Modal elements
     const completionModal = document.getElementById("completionModal");
     const closeModalButton = document.getElementById("closeModalButton");
     const shareButton = document.getElementById("shareButton");
+    const statsButton = document.getElementById("statsButton");
     const completionTimeSpan = document.getElementById("completionTime");
-    const modalTimeSpan = document.getElementById("modalTime");
-    const modalBestTimeSpan = document.getElementById("modalBestTime");
-    const modalDifficultySpan = document.getElementById("modalDifficulty");
-    const confettiContainer = document.getElementById("confetti-container");
+    const completionTimeSpan2 = document.getElementById("completionTime2");
+    const shareNumberSpan = document.getElementById("shareNumber");
+    const modalStreakIndicator = document.getElementById("modalStreakIndicator");
+    const modalStreakCount = document.getElementById("modalStreakCount");
+
+    // Stats Modal elements
+    const statsModal = document.getElementById("statsModal");
+    const closeStatsButton = document.getElementById("closeStatsButton");
+    const statPlayed = document.getElementById("statPlayed");
+    const statWinPercent = document.getElementById("statWinPercent");
+    const statCurrentStreak = document.getElementById("statCurrentStreak");
+    const statMaxStreak = document.getElementById("statMaxStreak");
+    const timeDistribution = document.getElementById("timeDistribution");
+    const bestTimes = document.getElementById("bestTimes");
+
+    // Login Modal elements
+    const loginModal = document.getElementById("loginModal");
+    const closeLoginButton = document.getElementById("closeLoginButton");
+    const signInButton = document.getElementById("signInButton");
+    const signUpButton = document.getElementById("signUpButton");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginError = document.getElementById("loginError");
+    const forgotPassword = document.getElementById("forgotPassword");
 
     // -------------------------------------------------------------
-    // DAILY SEED & COUNTDOWN
+    // DAILY SEED, PUZZLE NUMBER & COUNTDOWN
     // -------------------------------------------------------------
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayDate = new Date();
+    const todayStr = todayDate.toISOString().split('T')[0];
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    todayDateDisplay.textContent = todayDate.toLocaleDateString(undefined, options);
+    const startDate = new Date('2025-01-01');
+    const diffTime = Math.abs(todayDate - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    puzzleNumberDisplay.textContent = diffDays;
+    shareNumberSpan.textContent = diffDays;
     let seed = 0;
     for (let i = 0; i < todayStr.length; i++) {
       seed += todayStr.charCodeAt(i);
@@ -461,7 +677,6 @@
       };
     }
     const random = mulberry32(seed);
-
     function updateCountdown() {
       const now = new Date();
       const tomorrow = new Date(now);
@@ -479,21 +694,49 @@
     updateCountdown();
 
     // -------------------------------------------------------------
-    // DIFFICULTY
+    // TIMER FUNCTIONS
     // -------------------------------------------------------------
-    const savedDifficulty = localStorage.getItem('jigsawDifficulty-' + todayStr);
-    if (savedDifficulty) {
-      difficultySelect.value = savedDifficulty;
+    let startTime = Date.now();
+    let elapsedTime = 0;
+    let timerInterval;
+    const timerKey = "jigsawPuzzleTimer-" + todayStr;
+    const bestTimeKey = "jigsawBestTime-" + todayStr;
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return (
+        minutes.toString().padStart(2, '0') +
+        ":" +
+        seconds.toString().padStart(2, '0')
+      );
     }
-    difficultySelect.addEventListener('change', () => {
-      localStorage.setItem('jigsawDifficulty-' + todayStr, difficultySelect.value);
-      resetPuzzle(true);
-    });
+    function startTimer() {
+      const savedElapsed = localStorage.getItem(timerKey);
+      if (savedElapsed) {
+        elapsedTime = parseInt(savedElapsed, 10);
+        startTime = Date.now() - elapsedTime;
+      }
+      const bestTime = localStorage.getItem(bestTimeKey);
+      if (bestTime) {
+        bestTimeDisplay.textContent = formatTime(parseInt(bestTime, 10));
+      }
+      timerInterval = setInterval(() => {
+        elapsedTime = Date.now() - startTime;
+        timerDisplay.textContent = formatTime(elapsedTime);
+        localStorage.setItem(timerKey, elapsedTime.toString());
+      }, 1000);
+      timerDisplay.textContent = formatTime(elapsedTime);
+    }
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
 
-    // Return puzzle dimension settings based on difficulty & screen size
+    // -------------------------------------------------------------
+    // PUZZLE IMAGE GENERATION (Fixed 4×4 for Daily Puzzle)
+    // -------------------------------------------------------------
     function getDifficultySettings() {
-      const rows = parseInt(difficultySelect.value);
-      const cols = rows;
+      const rows = 4, cols = 4;
       let baseSize = 400;
       let bumpSize = 20;
       if (window.innerWidth < 480) {
@@ -507,71 +750,12 @@
       container.style.height = containerSize + "px";
       return { rows, cols, baseSize, bumpSize, pieceWidth, pieceHeight, containerSize };
     }
-
-    // -------------------------------------------------------------
-    // TIMER
-    // -------------------------------------------------------------
-    let startTime = Date.now();
-    let elapsedTime = 0;
-    let timerInterval;
-    const timerKey = "jigsawPuzzleTimer-" + todayStr;
-    const bestTimeKey = "jigsawBestTime-" + todayStr;
-
-    function formatTime(ms) {
-      const totalSeconds = Math.floor(ms / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return (
-        minutes.toString().padStart(2, '0') +
-        ":" +
-        seconds.toString().padStart(2, '0')
-      );
-    }
-
-    function startTimer() {
-      const savedElapsed = localStorage.getItem(timerKey);
-      if (savedElapsed) {
-        elapsedTime = parseInt(savedElapsed, 10);
-        startTime = Date.now() - elapsedTime;
-      }
-      // Load best time if any
-      const bestTime = localStorage.getItem(bestTimeKey);
-      if (bestTime) {
-        bestTimeDisplay.textContent = formatTime(parseInt(bestTime, 10));
-      }
-      timerInterval = setInterval(() => {
-        elapsedTime = Date.now() - startTime;
-        timerDisplay.textContent = formatTime(elapsedTime);
-        localStorage.setItem(timerKey, elapsedTime.toString());
-      }, 1000);
-      // Initial display
-      timerDisplay.textContent = formatTime(elapsedTime);
-    }
-
-    function stopTimer() {
-      clearInterval(timerInterval);
-    }
-
-    function resetTimer() {
-      stopTimer();
-      startTime = Date.now();
-      elapsedTime = 0;
-      timerDisplay.textContent = formatTime(0);
-      localStorage.setItem(timerKey, "0");
-      startTimer();
-    }
-
-    // -------------------------------------------------------------
-    // PUZZLE IMAGE GENERATION
-    // -------------------------------------------------------------
     function generateBaseImage() {
       const { baseSize } = getDifficultySettings();
       const canvas = document.createElement("canvas");
       canvas.width = baseSize;
       canvas.height = baseSize;
       const ctx = canvas.getContext("2d");
-
-      // Gradient background
       const grad = ctx.createLinearGradient(0, 0, baseSize, baseSize);
       const color1 = `hsl(${Math.floor(random()*360)}, 70%, 70%)`;
       const color2 = `hsl(${Math.floor(random()*360)}, 70%, 70%)`;
@@ -579,11 +763,8 @@
       grad.addColorStop(1, color2);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, baseSize, baseSize);
-
-      // Choose a pattern type
       const patternType = Math.floor(random() * 4);
       if (patternType === 0) {
-        // Circles pattern
         for (let i = 0; i < 15; i++) {
           ctx.beginPath();
           const x = random() * baseSize;
@@ -594,7 +775,6 @@
           ctx.fill();
         }
       } else if (patternType === 1) {
-        // Stripes pattern
         const stripeCount = Math.floor(random() * 10) + 5;
         const stripeWidth = baseSize / stripeCount;
         for (let i = 0; i < stripeCount; i++) {
@@ -602,7 +782,6 @@
           ctx.fillRect(i * stripeWidth, 0, stripeWidth, baseSize);
         }
       } else if (patternType === 2) {
-        // Grid pattern
         const gridSize = Math.floor(random() * 5) + 3;
         const cellSize = baseSize / gridSize;
         for (let i = 0; i < gridSize; i++) {
@@ -614,7 +793,6 @@
           }
         }
       } else {
-        // Abstract pattern
         for (let i = 0; i < 8; i++) {
           ctx.beginPath();
           ctx.moveTo(random() * baseSize, random() * baseSize);
@@ -638,8 +816,6 @@
       const { rows, cols, baseSize, bumpSize, pieceWidth, pieceHeight } = getDifficultySettings();
       const pieces = [];
       const piecesArray = [];
-
-      // Step 1: define edges
       for (let r = 0; r < rows; r++) {
         pieces[r] = [];
         for (let c = 0; c < cols; c++) {
@@ -651,7 +827,6 @@
             edges: {},
             locked: false
           };
-          // 0 = flat, +1 = tab, -1 = blank
           piece.edges.top = (r === 0) ? 0 : -pieces[r-1][c].edges.bottom;
           piece.edges.left = (c === 0) ? 0 : -pieces[r][c-1].edges.right;
           piece.edges.right = (c === cols - 1) ? 0 : (random() > 0.5 ? 1 : -1);
@@ -659,23 +834,17 @@
           pieces[r][c] = piece;
         }
       }
-
-      // Step 2: draw each piece
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const piece = pieces[r][c];
-          // Offscreen canvas
           const offCanvas = document.createElement("canvas");
-          offCanvas.width = pieceWidth + 2*bumpSize;
-          offCanvas.height = pieceHeight + 2*bumpSize;
+          offCanvas.width = pieceWidth + 2 * bumpSize;
+          offCanvas.height = pieceHeight + 2 * bumpSize;
           const offCtx = offCanvas.getContext("2d");
-
-          // Clip shape
           offCtx.save();
           offCtx.translate(bumpSize, bumpSize);
           drawJigsawShape(offCtx, piece.edges, pieceWidth, pieceHeight, bumpSize);
           offCtx.clip();
-          // Draw the relevant portion of the base image
           offCtx.drawImage(
             baseImageCanvas,
             c * pieceWidth, r * pieceHeight,
@@ -684,71 +853,58 @@
             pieceWidth, pieceHeight
           );
           offCtx.restore();
-
-          // DOM canvas
           const domCanvas = document.createElement("canvas");
           domCanvas.width = offCanvas.width;
           domCanvas.height = offCanvas.height;
           domCanvas.className = "piece";
           const domCtx = domCanvas.getContext("2d");
           domCtx.drawImage(offCanvas, 0, 0);
-
           piece.canvas = domCanvas;
           piecesArray.push(piece);
           container.appendChild(domCanvas);
         }
       }
-
       return { pieces, piecesArray };
     }
-
-    // Draw jigsaw shape
     function drawJigsawShape(ctx, edges, w, h, bump) {
       ctx.beginPath();
-      // Top edge
       const topThird = w / 3;
       ctx.moveTo(0, 0);
       ctx.lineTo(topThird, 0);
       if (edges.top !== 0) {
         ctx.bezierCurveTo(
           topThird + topThird/4, edges.top * bump,
-          2*topThird - topThird/4, edges.top * bump,
-          2*topThird, 0
+          2 * topThird - topThird/4, edges.top * bump,
+          2 * topThird, 0
         );
       }
       ctx.lineTo(w, 0);
-
-      // Right edge
       const rightThird = h / 3;
       ctx.lineTo(w, rightThird);
       if (edges.right !== 0) {
         ctx.bezierCurveTo(
-          w + edges.right*bump, rightThird + rightThird/4,
-          w + edges.right*bump, 2*rightThird - rightThird/4,
-          w, 2*rightThird
+          w + edges.right * bump, rightThird + rightThird/4,
+          w + edges.right * bump, 2 * rightThird - rightThird/4,
+          w, 2 * rightThird
         );
       }
       ctx.lineTo(w, h);
-
-      // Bottom edge
       const bottomThird = w / 3;
       ctx.lineTo(w - bottomThird, h);
       if (edges.bottom !== 0) {
         ctx.bezierCurveTo(
-          w - bottomThird - bottomThird/4, h + edges.bottom*bump,
-          bottomThird + bottomThird/4, h + edges.bottom*bump,
+          w - bottomThird - bottomThird/4, h + edges.bottom * bump,
+          bottomThird + bottomThird/4, h + edges.bottom * bump,
           bottomThird, h
         );
       }
       ctx.lineTo(0, h);
-
-      // Left edge
       const leftThird = h / 3;
       ctx.lineTo(0, h - leftThird);
       if (edges.left !== 0) {
         ctx.bezierCurveTo(
-          edges.left*bump, h - leftThird - leftThird/4,
-          edges.left*bump, leftThird + leftThird/4,
+          edges.left * bump, h - leftThird - leftThird/4,
+          edges.left * bump, leftThird + leftThird/4,
           0, leftThird
         );
       }
@@ -757,15 +913,13 @@
     }
 
     // -------------------------------------------------------------
-    // PUZZLE STATE & SCRAMBLE
+    // PUZZLE STATE MANAGEMENT (Daily Puzzle)
     // -------------------------------------------------------------
     function scramblePieces(piecesArray) {
       const { rows, cols, pieceWidth, pieceHeight, bumpSize } = getDifficultySettings();
-      const stateKey = "jigsawPuzzleState-" + todayStr + "-" + difficultySelect.value;
+      const stateKey = "jigsawPuzzleState-" + todayStr;
       let savedState = localStorage.getItem(stateKey);
-
       if (savedState) {
-        // Restore saved
         const positions = JSON.parse(savedState);
         positions.forEach((pos, i) => {
           if (i < piecesArray.length) {
@@ -774,19 +928,16 @@
           }
         });
       } else {
-        // Create new scramble
         const positions = [];
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
             positions.push({ row: r, col: c });
           }
         }
-        // Shuffle
         for (let i = positions.length - 1; i > 0; i--) {
           const j = Math.floor(random() * (i + 1));
           [positions[i], positions[j]] = [positions[j], positions[i]];
         }
-        // Apply
         piecesArray.forEach((piece, index) => {
           if (index < positions.length) {
             piece.currentRow = positions[index].row;
@@ -795,19 +946,15 @@
         });
         savePuzzleState(piecesArray);
       }
-
-      // Position pieces
       piecesArray.forEach(piece => {
         positionPiece(piece, pieceWidth, pieceHeight, bumpSize);
         updatePieceHighlight(piece);
       });
     }
-
     function positionPiece(piece, pieceWidth, pieceHeight, bumpSize) {
       piece.canvas.style.left = (piece.currentCol * pieceWidth - bumpSize) + "px";
       piece.canvas.style.top = (piece.currentRow * pieceHeight - bumpSize) + "px";
     }
-
     function updatePieceHighlight(piece) {
       if (piece.currentRow === piece.row && piece.currentCol === piece.col) {
         piece.canvas.classList.add("correct");
@@ -817,10 +964,9 @@
         piece.locked = false;
       }
     }
-
     function savePuzzleState(piecesArray) {
-      const stateKey = "jigsawPuzzleState-" + todayStr + "-" + difficultySelect.value;
-      let positions = piecesArray.map(piece => ({
+      const stateKey = "jigsawPuzzleState-" + todayStr;
+      const positions = piecesArray.map(piece => ({
         currentRow: piece.currentRow,
         currentCol: piece.currentCol
       }));
@@ -832,22 +978,18 @@
     // -------------------------------------------------------------
     function addDragAndDrop(piecesArray) {
       const { rows, cols, pieceWidth, pieceHeight, bumpSize } = getDifficultySettings();
-
       piecesArray.forEach(piece => {
         let offsetX = 0, offsetY = 0;
         let isDragging = false;
-
         piece.canvas.addEventListener("pointerdown", (e) => {
           if (piece.locked) return;
           isDragging = true;
           piece.canvas.classList.add("dragging");
           piece.canvas.setPointerCapture(e.pointerId);
-
           const rect = piece.canvas.getBoundingClientRect();
           offsetX = e.clientX - rect.left;
           offsetY = e.clientY - rect.top;
         });
-
         piece.canvas.addEventListener("pointermove", (e) => {
           if (!isDragging) return;
           const containerRect = container.getBoundingClientRect();
@@ -856,49 +998,38 @@
           piece.canvas.style.left = newLeft + "px";
           piece.canvas.style.top = newTop + "px";
         });
-
         piece.canvas.addEventListener("pointerup", (e) => {
           if (!isDragging) return;
           isDragging = false;
           piece.canvas.classList.remove("dragging");
-
-          // Snap to nearest cell
           const leftPos = parseInt(piece.canvas.style.left, 10);
           const topPos = parseInt(piece.canvas.style.top, 10);
           let targetCol = Math.round((leftPos + bumpSize) / pieceWidth);
           let targetRow = Math.round((topPos + bumpSize) / pieceHeight);
           targetCol = Math.max(0, Math.min(cols - 1, targetCol));
           targetRow = Math.max(0, Math.min(rows - 1, targetRow));
-
-          // Check if that cell is occupied
           const other = piecesArray.find(p =>
             p !== piece &&
             p.currentRow === targetRow &&
             p.currentCol === targetCol
           );
-
           if (other) {
-            // Swap
             const tmpRow = piece.currentRow;
             const tmpCol = piece.currentCol;
             piece.currentRow = other.currentRow;
             piece.currentCol = other.currentCol;
             other.currentRow = tmpRow;
             other.currentCol = tmpCol;
-
             positionPiece(piece, pieceWidth, pieceHeight, bumpSize);
             positionPiece(other, pieceWidth, pieceHeight, bumpSize);
             updatePieceHighlight(piece);
             updatePieceHighlight(other);
           } else {
-            // Just snap
             piece.currentRow = targetRow;
             piece.currentCol = targetCol;
             positionPiece(piece, pieceWidth, pieceHeight, bumpSize);
             updatePieceHighlight(piece);
           }
-
-          // Save & check solve
           savePuzzleState(piecesArray);
           if (checkPuzzleSolved(piecesArray)) {
             puzzleComplete();
@@ -906,46 +1037,76 @@
         });
       });
     }
-
     function checkPuzzleSolved(piecesArray) {
       return piecesArray.every(p => p.currentRow === p.row && p.currentCol === p.col);
     }
 
     // -------------------------------------------------------------
-    // PUZZLE COMPLETE
+    // PUZZLE COMPLETE & LEADERBOARD SUBMISSION
     // -------------------------------------------------------------
     function puzzleComplete() {
       stopTimer();
       const totalTime = elapsedTime;
-      // Update best time if needed
       const bestTime = localStorage.getItem(bestTimeKey);
       if (!bestTime || parseInt(bestTime, 10) > totalTime) {
         localStorage.setItem(bestTimeKey, totalTime.toString());
         bestTimeDisplay.textContent = formatTime(totalTime);
       }
-
-      // Show the completion modal
       completionTimeSpan.textContent = formatTime(totalTime);
-      modalTimeSpan.textContent = formatTime(totalTime);
-
-      // Show best time in modal
+      completionTimeSpan2.textContent = formatTime(totalTime);
       if (bestTime && parseInt(bestTime, 10) < totalTime) {
         modalBestTimeSpan.textContent = formatTime(parseInt(bestTime, 10));
       } else {
         modalBestTimeSpan.textContent = formatTime(totalTime);
       }
-
-      // Difficulty label
-      const difficultyLabel = difficultySelect.options[difficultySelect.selectedIndex].textContent;
-      modalDifficultySpan.textContent = difficultyLabel;
-
       completionModal.style.display = "flex";
       launchConfetti();
+      submitScore(totalTime);
+      if (currentUser) {
+        updateUserStats(totalTime);
+      }
     }
-
-    // -------------------------------------------------------------
-    // CONFETTI
-    // -------------------------------------------------------------
+    function submitScore(score) {
+      const todayDoc = todayStr;
+      db.collection("leaderboard")
+        .doc(todayDoc)
+        .collection("scores")
+        .add({
+          score: score,
+          uid: currentUser ? currentUser.uid : null,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          console.log("Score submitted.");
+          loadLeaderboard();
+        })
+        .catch((error) => {
+          console.error("Error submitting score:", error);
+        });
+    }
+    function loadLeaderboard() {
+      const todayDoc = todayStr;
+      db.collection("leaderboard")
+        .doc(todayDoc)
+        .collection("scores")
+        .orderBy("score", "asc")
+        .limit(10)
+        .get()
+        .then((querySnapshot) => {
+          let leaderboardHTML = "<h3>Daily Leaderboard</h3><table><tr><th>Rank</th><th>Time</th></tr>";
+          let rank = 1;
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            leaderboardHTML += `<tr><td>${rank}</td><td>${formatTime(data.score)}</td></tr>`;
+            rank++;
+          });
+          leaderboardHTML += "</table>";
+          leaderboardContainer.innerHTML = leaderboardHTML;
+        })
+        .catch((error) => {
+          console.error("Error loading leaderboard:", error);
+        });
+    }
     function launchConfetti() {
       const colors = ["#FFC107", "#E91E63", "#03A9F4", "#4CAF50", "#FF5722"];
       const confettiCount = 50;
@@ -954,25 +1115,186 @@
         confetti.className = "confetti";
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         confetti.style.left = Math.random() * container.offsetWidth + "px";
-        confettiContainer.appendChild(confetti);
+        document.getElementById("confetti-container").appendChild(confetti);
         confetti.addEventListener("animationend", () => {
-          confettiContainer.removeChild(confetti);
+          confetti.parentNode.removeChild(confetti);
         });
       }
     }
 
     // -------------------------------------------------------------
-    // MODAL & SHARE
+    // USER AUTHENTICATION & PROFILE
+    // -------------------------------------------------------------
+    let currentUser = null;
+    function setupAuthUI() {
+      if (auth.currentUser) {
+        currentUser = auth.currentUser;
+        const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+        const initials = displayName.substring(0, 2).toUpperCase();
+        userProfileArea.innerHTML = `
+          <div class="user-profile">
+            <div class="user-avatar">${initials}</div>
+            <span>${displayName}</span>
+            <button id="signOutButton" class="profile-btn">Sign Out</button>
+          </div>
+        `;
+        document.getElementById("signOutButton").addEventListener("click", () => {
+          auth.signOut().then(setupAuthUI);
+        });
+        loadUserStats();
+      } else {
+        userProfileArea.innerHTML = `<button id="loginButton" class="profile-btn">Sign In</button>`;
+        document.getElementById("loginButton").addEventListener("click", () => {
+          loginModal.style.display = "flex";
+        });
+      }
+    }
+    auth.onAuthStateChanged((user) => {
+      currentUser = user;
+      setupAuthUI();
+    });
+    // Load user statistics
+    function loadUserStats() {
+      if (!currentUser) return;
+      db.collection("users").doc(currentUser.uid).get().then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          statPlayed.textContent = data.played || 0;
+          statWinPercent.textContent = data.winPercent ? data.winPercent + "%" : "0%";
+          statCurrentStreak.textContent = data.currentStreak || 0;
+          statMaxStreak.textContent = data.maxStreak || 0;
+          if (data.currentStreak > 0) {
+            streakIndicator.style.display = "flex";
+            streakCount.textContent = data.currentStreak;
+          } else {
+            streakIndicator.style.display = "none";
+          }
+        } else {
+          statPlayed.textContent = "0";
+          statWinPercent.textContent = "0%";
+          statCurrentStreak.textContent = "0";
+          statMaxStreak.textContent = "0";
+          streakIndicator.style.display = "none";
+        }
+      }).catch((error) => {
+        console.error("Error loading user stats:", error);
+      });
+    }
+    // Update user statistics after a win
+    function updateUserStats(totalTime) {
+      if (!currentUser) return;
+      const userRef = db.collection("users").doc(currentUser.uid);
+      userRef.get().then((doc) => {
+        let played = 0, wins = 0, currentStreak = 0, maxStreak = 0;
+        if (doc.exists) {
+          const data = doc.data();
+          played = data.played || 0;
+          wins = data.wins || 0;
+          currentStreak = data.currentStreak || 0;
+          maxStreak = data.maxStreak || 0;
+        }
+        played++;
+        wins++;
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        const winPercent = Math.round((wins / played) * 100);
+        userRef.set({
+          played: played,
+          wins: wins,
+          currentStreak: currentStreak,
+          maxStreak: maxStreak,
+          winPercent: winPercent,
+          lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).then(() => {
+          loadUserStats();
+        }).catch((error) => {
+          console.error("Error updating user stats:", error);
+        });
+      }).catch((error) => {
+        console.error("Error reading user stats:", error);
+      });
+    }
+    // -------------------------------------------------------------
+    // LOGIN MODAL FUNCTIONALITY
+    // -------------------------------------------------------------
+    signInButton.addEventListener("click", () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      if (!email || !password) {
+        loginError.textContent = "Please enter both email and password.";
+        loginError.style.display = "block";
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          loginModal.style.display = "none";
+          emailInput.value = "";
+          passwordInput.value = "";
+          loginError.style.display = "none";
+        })
+        .catch((error) => {
+          loginError.textContent = error.message;
+          loginError.style.display = "block";
+        });
+    });
+    signUpButton.addEventListener("click", () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      if (!email || !password) {
+        loginError.textContent = "Please enter both email and password.";
+        loginError.style.display = "block";
+        return;
+      }
+      if (password.length < 6) {
+        loginError.textContent = "Password should be at least 6 characters long.";
+        loginError.style.display = "block";
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          loginModal.style.display = "none";
+          emailInput.value = "";
+          passwordInput.value = "";
+          loginError.style.display = "none";
+        })
+        .catch((error) => {
+          loginError.textContent = error.message;
+          loginError.style.display = "block";
+        });
+    });
+    closeLoginButton.addEventListener("click", () => {
+      loginModal.style.display = "none";
+      loginError.style.display = "none";
+    });
+    forgotPassword.addEventListener("click", (e) => {
+      e.preventDefault();
+      const email = emailInput.value;
+      if (!email) {
+        loginError.textContent = "Please enter your email address.";
+        loginError.style.display = "block";
+        return;
+      }
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          loginError.textContent = "Password reset email sent! Check your inbox.";
+          loginError.style.display = "block";
+        })
+        .catch((error) => {
+          loginError.textContent = error.message;
+          loginError.style.display = "block";
+        });
+    });
+
+    // -------------------------------------------------------------
+    // MODAL & SHARE FUNCTIONALITY
     // -------------------------------------------------------------
     closeModalButton.addEventListener("click", () => {
       completionModal.style.display = "none";
+      loadLeaderboard();
     });
-
     shareButton.addEventListener("click", () => {
       const totalTime = formatTime(elapsedTime);
-      const difficultyLabel = difficultySelect.options[difficultySelect.selectedIndex].textContent;
-      const shareText = `I solved today's jigsaw puzzle (${difficultyLabel}) in ${totalTime}!`;
-
+      const shareText = `I solved today's jigsaw puzzle in ${totalTime}! Can you beat my time?`;
       if (navigator.share) {
         navigator.share({ text: shareText });
       } else {
@@ -980,69 +1302,145 @@
         alert("Result copied to clipboard!");
       }
     });
+    statsButton.addEventListener("click", () => {
+      statsModal.style.display = "flex";
+    });
+    closeStatsButton.addEventListener("click", () => {
+      statsModal.style.display = "none";
+    });
 
     // -------------------------------------------------------------
     // HINT FUNCTIONALITY
     // -------------------------------------------------------------
     let hintVisible = false;
-    hintButton.addEventListener("click", () => {
-      hintVisible = !hintVisible;
-      hintOverlay.style.opacity = hintVisible ? "0" : "1";
-      hintButton.textContent = hintVisible ? "Hide Hint" : "Show Hint";
-    });
     hintOverlay.addEventListener("click", () => {
-      // same toggle
       hintVisible = !hintVisible;
       hintOverlay.style.opacity = hintVisible ? "0" : "1";
-      hintButton.textContent = hintVisible ? "Hide Hint" : "Show Hint";
     });
 
     // -------------------------------------------------------------
-    // RESET PUZZLE
+    // LEADERBOARD FUNCTIONS (Firebase Firestore)
     // -------------------------------------------------------------
-    function resetPuzzle(keepDifficulty = false) {
-      // Clear puzzle state & timer
-      const diffKey = difficultySelect.value;
-      const stateKey = "jigsawPuzzleState-" + todayStr + "-" + diffKey;
-      localStorage.removeItem(stateKey);
-      localStorage.removeItem(timerKey);
-      if (!keepDifficulty) {
-        localStorage.removeItem("jigsawDifficulty-" + todayStr);
-      }
-
-      // Clear container
-      while (container.firstChild) {
-        container.removeChild(container.firstChild);
-      }
-      // Re-init
-      initPuzzle();
+    function submitScore(score) {
+      const todayDoc = todayStr;
+      db.collection("leaderboard")
+        .doc(todayDoc)
+        .collection("scores")
+        .add({
+          score: score,
+          uid: currentUser ? currentUser.uid : null,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          console.log("Score submitted.");
+          loadLeaderboard();
+        })
+        .catch((error) => {
+          console.error("Error submitting score:", error);
+        });
     }
-    resetButton.addEventListener("click", () => {
-      resetPuzzle(true);
-    });
+    function loadLeaderboard() {
+      const todayDoc = todayStr;
+      db.collection("leaderboard")
+        .doc(todayDoc)
+        .collection("scores")
+        .orderBy("score", "asc")
+        .limit(10)
+        .get()
+        .then((querySnapshot) => {
+          let leaderboardHTML = "<h3>Daily Leaderboard</h3><table><tr><th>Rank</th><th>Time</th></tr>";
+          let rank = 1;
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            leaderboardHTML += `<tr><td>${rank}</td><td>${formatTime(data.score)}</td></tr>`;
+            rank++;
+          });
+          leaderboardHTML += "</table>";
+          leaderboardContainer.innerHTML = leaderboardHTML;
+        })
+        .catch((error) => {
+          console.error("Error loading leaderboard:", error);
+        });
+    }
 
     // -------------------------------------------------------------
-    // INITIAL PUZZLE SETUP
+    // INITIALIZE PUZZLE
     // -------------------------------------------------------------
     function initPuzzle() {
-      // Timer
-      resetTimer();
-      // Generate puzzle image
+      startTimer();
       const baseImageCanvas = generateBaseImage();
       referenceImage.src = baseImageCanvas.toDataURL();
-
-      // Create pieces
       const { pieces, piecesArray } = createPuzzlePieces(baseImageCanvas);
-      // Scramble or restore positions
       scramblePieces(piecesArray);
-      // Add drag events
       addDragAndDrop(piecesArray);
     }
-
-    // On load
     window.onload = () => {
       initPuzzle();
     };
+
+    // -------------------------------------------------------------
+    // USER STATISTICS FUNCTIONS
+    // -------------------------------------------------------------
+    function loadUserStats() {
+      if (!currentUser) return;
+      db.collection("users").doc(currentUser.uid).get().then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          statPlayed.textContent = data.played || 0;
+          statWinPercent.textContent = data.winPercent ? data.winPercent + "%" : "0%";
+          statCurrentStreak.textContent = data.currentStreak || 0;
+          statMaxStreak.textContent = data.maxStreak || 0;
+          if (data.currentStreak > 0) {
+            streakIndicator.style.display = "flex";
+            streakCount.textContent = data.currentStreak;
+          } else {
+            streakIndicator.style.display = "none";
+          }
+        } else {
+          statPlayed.textContent = "0";
+          statWinPercent.textContent = "0%";
+          statCurrentStreak.textContent = "0";
+          statMaxStreak.textContent = "0";
+          streakIndicator.style.display = "none";
+        }
+      }).catch((error) => {
+        console.error("Error loading user stats:", error);
+      });
+    }
+    function updateUserStats(totalTime) {
+      if (!currentUser) return;
+      const userRef = db.collection("users").doc(currentUser.uid);
+      userRef.get().then((doc) => {
+        let played = 0, wins = 0, currentStreak = 0, maxStreak = 0;
+        if (doc.exists) {
+          const data = doc.data();
+          played = data.played || 0;
+          wins = data.wins || 0;
+          currentStreak = data.currentStreak || 0;
+          maxStreak = data.maxStreak || 0;
+        }
+        played++;
+        wins++;
+        currentStreak++;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        const winPercent = Math.round((wins / played) * 100);
+        userRef.set({
+          played: played,
+          wins: wins,
+          currentStreak: currentStreak,
+          maxStreak: maxStreak,
+          winPercent: winPercent,
+          lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).then(() => {
+          loadUserStats();
+        }).catch((error) => {
+          console.error("Error updating user stats:", error);
+        });
+      }).catch((error) => {
+        console.error("Error reading user stats:", error);
+      });
+    }
+
   </script>
 </body>
 </html>

@@ -9,7 +9,10 @@
   <meta property="og:description" content="A daily jigsaw puzzle for everyone. New puzzle every day!" />
   <meta property="og:type" content="website" />
   <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -273,23 +276,6 @@
     .btn:hover {
       background-color: #303f9f;
     }
-    .share-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
-      margin: 15px 0;
-    }
-    .share-cell {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 4px;
-    }
-    .share-cell.correct {
-      background-color: var(--success-color);
-    }
-    .share-cell.incorrect {
-      background-color: #ccc;
-    }
     .share-container {
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -443,13 +429,11 @@
   <div class="container">
     <header>
       <h1>Daily Jigsaw Challenge</h1>
-      <div class="subheader">#<span id="puzzleNumber">1</span> - <span id="todayDate">March 8, 2025</span></div>
+      <div class="subheader">A new puzzle every day</div>
     </header>
     
     <div class="profile-area">
-      <div id="userProfileArea">
-        <!-- If not logged in, a Sign In button will appear -->
-      </div>
+      <div id="userProfileArea"></div>
     </div>
     
     <div class="game-stats">
@@ -467,19 +451,20 @@
       </div>
     </div>
 
+    <!-- Optional streak indicator if you want to display user streaks -->
     <div class="streak-indicator" id="streakIndicator" style="display: none;">
       <span class="streak-flame">🔥</span>
       <span class="streak-count" id="streakCount">0</span>
       <span>day streak!</span>
     </div>
 
-    <!-- Hint: Reference image -->
+    <!-- Hint: reference image (cannot reset or change difficulty) -->
     <div class="hint-container">
       <img id="reference-image" alt="Reference puzzle" />
       <div class="hint-overlay" id="hintOverlay">Click for hint</div>
     </div>
 
-    <!-- Puzzle container -->
+    <!-- Puzzle container (fixed daily puzzle) -->
     <div id="puzzle-container">
       <div id="confetti-container"></div>
     </div>
@@ -506,18 +491,17 @@
       </div>
       
       <div class="share-container">
-        <p>Daily Jigsaw #<span id="shareNumber">1</span> - <span id="completionTime2">0:00</span></p>
+        <p>Daily Jigsaw - <span id="completionTime2">0:00</span></p>
         <div class="share-emoji-grid" id="shareEmoji">🟩🟩🟩🟩<br>🟩🟩🟩🟩<br>🟩🟩🟩🟩<br>🟩🟩🟩🟩</div>
         <p>jigsawchallenge.com</p>
       </div>
       
       <button id="shareButton" class="btn">Share Result</button>
-      <button id="statsButton" class="btn">View Stats</button>
       <button id="closeModalButton" class="btn">Close</button>
     </div>
   </div>
-  
-  <!-- Stats Modal -->
+
+  <!-- Stats Modal (if you want advanced stats) -->
   <div id="statsModal" class="modal">
     <div class="modal-content">
       <h2>Your Statistics</h2>
@@ -539,19 +523,13 @@
           <div class="stat-label">Max Streak</div>
         </div>
       </div>
-      <h3>Time Distribution</h3>
-      <div id="timeDistribution" style="margin: 15px 0;">
-        <!-- Chart or details can be added here -->
-      </div>
-      <h3>Best Times</h3>
-      <div id="bestTimes" style="margin: 15px 0;">
-        <!-- Best times list -->
-      </div>
+      <div id="timeDistribution" style="margin: 15px 0;"></div>
+      <div id="bestTimes" style="margin: 15px 0;"></div>
       <button id="closeStatsButton" class="btn">Close</button>
     </div>
   </div>
-  
-  <!-- Login Modal -->
+
+  <!-- Login Modal (if using Firebase Auth) -->
   <div id="loginModal" class="modal">
     <div class="modal-content">
       <h2>Sign In</h2>
@@ -576,7 +554,7 @@
 
   <script>
     // -------------------------------------------------------------
-    // Firebase Initialization (Replace with your Firebase config)
+    // 1) Firebase Initialization (Replace with your config)
     // -------------------------------------------------------------
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
@@ -591,7 +569,7 @@
     const auth = firebase.auth();
 
     // -------------------------------------------------------------
-    // THEME SWITCHER
+    // 2) THEME SWITCHER
     // -------------------------------------------------------------
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('click', () => {
@@ -605,7 +583,7 @@
     }
 
     // -------------------------------------------------------------
-    // DOM ELEMENTS
+    // 3) DOM ELEMENTS
     // -------------------------------------------------------------
     const container = document.getElementById("puzzle-container");
     const timerDisplay = document.getElementById("timer");
@@ -615,34 +593,24 @@
     const hintOverlay = document.getElementById("hintOverlay");
     const messageDisplay = document.getElementById("message");
     const leaderboardContainer = document.getElementById("leaderboardContainer");
-    const puzzleNumberDisplay = document.getElementById("puzzleNumber");
-    const todayDateDisplay = document.getElementById("todayDate");
     const userProfileArea = document.getElementById("userProfileArea");
-    const streakIndicator = document.getElementById("streakIndicator");
-    const streakCount = document.getElementById("streakCount");
 
-    // Completion Modal elements
+    // Completion modal
     const completionModal = document.getElementById("completionModal");
     const closeModalButton = document.getElementById("closeModalButton");
     const shareButton = document.getElementById("shareButton");
-    const statsButton = document.getElementById("statsButton");
     const completionTimeSpan = document.getElementById("completionTime");
     const completionTimeSpan2 = document.getElementById("completionTime2");
-    const shareNumberSpan = document.getElementById("shareNumber");
-    const modalStreakIndicator = document.getElementById("modalStreakIndicator");
-    const modalStreakCount = document.getElementById("modalStreakCount");
 
-    // Stats Modal elements
+    // Stats modal
     const statsModal = document.getElementById("statsModal");
     const closeStatsButton = document.getElementById("closeStatsButton");
     const statPlayed = document.getElementById("statPlayed");
     const statWinPercent = document.getElementById("statWinPercent");
     const statCurrentStreak = document.getElementById("statCurrentStreak");
     const statMaxStreak = document.getElementById("statMaxStreak");
-    const timeDistribution = document.getElementById("timeDistribution");
-    const bestTimes = document.getElementById("bestTimes");
 
-    // Login Modal elements
+    // Login modal
     const loginModal = document.getElementById("loginModal");
     const closeLoginButton = document.getElementById("closeLoginButton");
     const signInButton = document.getElementById("signInButton");
@@ -652,22 +620,17 @@
     const loginError = document.getElementById("loginError");
     const forgotPassword = document.getElementById("forgotPassword");
 
+    // Optional streak elements
+    const streakIndicator = document.getElementById("streakIndicator");
+    const streakCount = document.getElementById("streakCount");
+    const modalStreakIndicator = document.getElementById("modalStreakIndicator");
+    const modalStreakCount = document.getElementById("modalStreakCount");
+
     // -------------------------------------------------------------
-    // DAILY SEED, PUZZLE NUMBER & COUNTDOWN
+    // 4) DAILY SEED & COUNTDOWN
     // -------------------------------------------------------------
     const todayDate = new Date();
     const todayStr = todayDate.toISOString().split('T')[0];
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    todayDateDisplay.textContent = todayDate.toLocaleDateString(undefined, options);
-    const startDate = new Date('2025-01-01');
-    const diffTime = Math.abs(todayDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    puzzleNumberDisplay.textContent = diffDays;
-    shareNumberSpan.textContent = diffDays;
-    let seed = 0;
-    for (let i = 0; i < todayStr.length; i++) {
-      seed += todayStr.charCodeAt(i);
-    }
     function mulberry32(a) {
       return function() {
         let t = a += 0x6D2B79F5;
@@ -676,7 +639,12 @@
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
     }
+    let seed = 0;
+    for (let i = 0; i < todayStr.length; i++) {
+      seed += todayStr.charCodeAt(i);
+    }
     const random = mulberry32(seed);
+
     function updateCountdown() {
       const now = new Date();
       const tomorrow = new Date(now);
@@ -694,13 +662,14 @@
     updateCountdown();
 
     // -------------------------------------------------------------
-    // TIMER FUNCTIONS
+    // 5) TIMER
     // -------------------------------------------------------------
     let startTime = Date.now();
     let elapsedTime = 0;
     let timerInterval;
     const timerKey = "jigsawPuzzleTimer-" + todayStr;
     const bestTimeKey = "jigsawBestTime-" + todayStr;
+
     function formatTime(ms) {
       const totalSeconds = Math.floor(ms / 1000);
       const minutes = Math.floor(totalSeconds / 60);
@@ -711,6 +680,7 @@
         seconds.toString().padStart(2, '0')
       );
     }
+
     function startTimer() {
       const savedElapsed = localStorage.getItem(timerKey);
       if (savedElapsed) {
@@ -728,14 +698,16 @@
       }, 1000);
       timerDisplay.textContent = formatTime(elapsedTime);
     }
+
     function stopTimer() {
       clearInterval(timerInterval);
     }
 
     // -------------------------------------------------------------
-    // PUZZLE IMAGE GENERATION (Fixed 4×4 for Daily Puzzle)
+    // 6) GENERATE PUZZLE IMAGE (Fixed 4×4)
     // -------------------------------------------------------------
     function getDifficultySettings() {
+      // Hard-coded 4x4 puzzle
       const rows = 4, cols = 4;
       let baseSize = 400;
       let bumpSize = 20;
@@ -750,12 +722,15 @@
       container.style.height = containerSize + "px";
       return { rows, cols, baseSize, bumpSize, pieceWidth, pieceHeight, containerSize };
     }
+
     function generateBaseImage() {
       const { baseSize } = getDifficultySettings();
       const canvas = document.createElement("canvas");
       canvas.width = baseSize;
       canvas.height = baseSize;
       const ctx = canvas.getContext("2d");
+
+      // Simple gradient
       const grad = ctx.createLinearGradient(0, 0, baseSize, baseSize);
       const color1 = `hsl(${Math.floor(random()*360)}, 70%, 70%)`;
       const color2 = `hsl(${Math.floor(random()*360)}, 70%, 70%)`;
@@ -763,8 +738,11 @@
       grad.addColorStop(1, color2);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, baseSize, baseSize);
+
+      // Additional pattern
       const patternType = Math.floor(random() * 4);
       if (patternType === 0) {
+        // Circles
         for (let i = 0; i < 15; i++) {
           ctx.beginPath();
           const x = random() * baseSize;
@@ -775,6 +753,7 @@
           ctx.fill();
         }
       } else if (patternType === 1) {
+        // Stripes
         const stripeCount = Math.floor(random() * 10) + 5;
         const stripeWidth = baseSize / stripeCount;
         for (let i = 0; i < stripeCount; i++) {
@@ -782,6 +761,7 @@
           ctx.fillRect(i * stripeWidth, 0, stripeWidth, baseSize);
         }
       } else if (patternType === 2) {
+        // Grid
         const gridSize = Math.floor(random() * 5) + 3;
         const cellSize = baseSize / gridSize;
         for (let i = 0; i < gridSize; i++) {
@@ -793,6 +773,7 @@
           }
         }
       } else {
+        // Abstract
         for (let i = 0; i < 8; i++) {
           ctx.beginPath();
           ctx.moveTo(random() * baseSize, random() * baseSize);
@@ -810,12 +791,14 @@
     }
 
     // -------------------------------------------------------------
-    // JIGSAW PIECE CREATION
+    // 7) CREATE PUZZLE PIECES
     // -------------------------------------------------------------
     function createPuzzlePieces(baseImageCanvas) {
       const { rows, cols, baseSize, bumpSize, pieceWidth, pieceHeight } = getDifficultySettings();
       const pieces = [];
       const piecesArray = [];
+
+      // Edges
       for (let r = 0; r < rows; r++) {
         pieces[r] = [];
         for (let c = 0; c < cols; c++) {
@@ -834,6 +817,8 @@
           pieces[r][c] = piece;
         }
       }
+
+      // Draw each piece
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const piece = pieces[r][c];
@@ -841,6 +826,7 @@
           offCanvas.width = pieceWidth + 2 * bumpSize;
           offCanvas.height = pieceHeight + 2 * bumpSize;
           const offCtx = offCanvas.getContext("2d");
+
           offCtx.save();
           offCtx.translate(bumpSize, bumpSize);
           drawJigsawShape(offCtx, piece.edges, pieceWidth, pieceHeight, bumpSize);
@@ -853,17 +839,20 @@
             pieceWidth, pieceHeight
           );
           offCtx.restore();
+
           const domCanvas = document.createElement("canvas");
           domCanvas.width = offCanvas.width;
           domCanvas.height = offCanvas.height;
           domCanvas.className = "piece";
           const domCtx = domCanvas.getContext("2d");
           domCtx.drawImage(offCanvas, 0, 0);
+
           piece.canvas = domCanvas;
           piecesArray.push(piece);
           container.appendChild(domCanvas);
         }
       }
+
       return { pieces, piecesArray };
     }
     function drawJigsawShape(ctx, edges, w, h, bump) {
@@ -874,8 +863,8 @@
       if (edges.top !== 0) {
         ctx.bezierCurveTo(
           topThird + topThird/4, edges.top * bump,
-          2 * topThird - topThird/4, edges.top * bump,
-          2 * topThird, 0
+          2*topThird - topThird/4, edges.top * bump,
+          2*topThird, 0
         );
       }
       ctx.lineTo(w, 0);
@@ -883,9 +872,9 @@
       ctx.lineTo(w, rightThird);
       if (edges.right !== 0) {
         ctx.bezierCurveTo(
-          w + edges.right * bump, rightThird + rightThird/4,
-          w + edges.right * bump, 2 * rightThird - rightThird/4,
-          w, 2 * rightThird
+          w + edges.right*bump, rightThird + rightThird/4,
+          w + edges.right*bump, 2*rightThird - rightThird/4,
+          w, 2*rightThird
         );
       }
       ctx.lineTo(w, h);
@@ -893,8 +882,8 @@
       ctx.lineTo(w - bottomThird, h);
       if (edges.bottom !== 0) {
         ctx.bezierCurveTo(
-          w - bottomThird - bottomThird/4, h + edges.bottom * bump,
-          bottomThird + bottomThird/4, h + edges.bottom * bump,
+          w - bottomThird - bottomThird/4, h + edges.bottom*bump,
+          bottomThird + bottomThird/4, h + edges.bottom*bump,
           bottomThird, h
         );
       }
@@ -903,8 +892,8 @@
       ctx.lineTo(0, h - leftThird);
       if (edges.left !== 0) {
         ctx.bezierCurveTo(
-          edges.left * bump, h - leftThird - leftThird/4,
-          edges.left * bump, leftThird + leftThird/4,
+          edges.left*bump, h - leftThird - leftThird/4,
+          edges.left*bump, leftThird + leftThird/4,
           0, leftThird
         );
       }
@@ -913,13 +902,15 @@
     }
 
     // -------------------------------------------------------------
-    // PUZZLE STATE MANAGEMENT (Daily Puzzle)
+    // 8) SCRAMBLE / SAVE STATE (Daily)
     // -------------------------------------------------------------
     function scramblePieces(piecesArray) {
       const { rows, cols, pieceWidth, pieceHeight, bumpSize } = getDifficultySettings();
       const stateKey = "jigsawPuzzleState-" + todayStr;
       let savedState = localStorage.getItem(stateKey);
+
       if (savedState) {
+        // Restore
         const positions = JSON.parse(savedState);
         positions.forEach((pos, i) => {
           if (i < piecesArray.length) {
@@ -928,6 +919,7 @@
           }
         });
       } else {
+        // Shuffle once
         const positions = [];
         for (let r = 0; r < rows; r++) {
           for (let c = 0; c < cols; c++) {
@@ -946,6 +938,8 @@
         });
         savePuzzleState(piecesArray);
       }
+
+      // Position
       piecesArray.forEach(piece => {
         positionPiece(piece, pieceWidth, pieceHeight, bumpSize);
         updatePieceHighlight(piece);
@@ -974,7 +968,7 @@
     }
 
     // -------------------------------------------------------------
-    // DRAG-AND-DROP LOGIC
+    // 9) DRAG-AND-DROP LOGIC
     // -------------------------------------------------------------
     function addDragAndDrop(piecesArray) {
       const { rows, cols, pieceWidth, pieceHeight, bumpSize } = getDifficultySettings();
@@ -1042,7 +1036,7 @@
     }
 
     // -------------------------------------------------------------
-    // PUZZLE COMPLETE & LEADERBOARD SUBMISSION
+    // 10) PUZZLE COMPLETE & LEADERBOARD
     // -------------------------------------------------------------
     function puzzleComplete() {
       stopTimer();
@@ -1054,11 +1048,6 @@
       }
       completionTimeSpan.textContent = formatTime(totalTime);
       completionTimeSpan2.textContent = formatTime(totalTime);
-      if (bestTime && parseInt(bestTime, 10) < totalTime) {
-        modalBestTimeSpan.textContent = formatTime(parseInt(bestTime, 10));
-      } else {
-        modalBestTimeSpan.textContent = formatTime(totalTime);
-      }
       completionModal.style.display = "flex";
       launchConfetti();
       submitScore(totalTime);
@@ -1077,7 +1066,6 @@
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         })
         .then(() => {
-          console.log("Score submitted.");
           loadLeaderboard();
         })
         .catch((error) => {
@@ -1123,9 +1111,13 @@
     }
 
     // -------------------------------------------------------------
-    // USER AUTHENTICATION & PROFILE
+    // 11) AUTH & PROFILE UI
     // -------------------------------------------------------------
     let currentUser = null;
+    auth.onAuthStateChanged((user) => {
+      currentUser = user;
+      setupAuthUI();
+    });
     function setupAuthUI() {
       if (auth.currentUser) {
         currentUser = auth.currentUser;
@@ -1144,16 +1136,16 @@
         loadUserStats();
       } else {
         userProfileArea.innerHTML = `<button id="loginButton" class="profile-btn">Sign In</button>`;
-        document.getElementById("loginButton").addEventListener("click", () => {
+        const loginBtn = document.getElementById("loginButton");
+        loginBtn.addEventListener("click", () => {
           loginModal.style.display = "flex";
         });
       }
     }
-    auth.onAuthStateChanged((user) => {
-      currentUser = user;
-      setupAuthUI();
-    });
-    // Load user statistics
+
+    // -------------------------------------------------------------
+    // 12) USER STATS
+    // -------------------------------------------------------------
     function loadUserStats() {
       if (!currentUser) return;
       db.collection("users").doc(currentUser.uid).get().then((doc) => {
@@ -1180,7 +1172,6 @@
         console.error("Error loading user stats:", error);
       });
     }
-    // Update user statistics after a win
     function updateUserStats(totalTime) {
       if (!currentUser) return;
       const userRef = db.collection("users").doc(currentUser.uid);
@@ -1214,8 +1205,9 @@
         console.error("Error reading user stats:", error);
       });
     }
+
     // -------------------------------------------------------------
-    // LOGIN MODAL FUNCTIONALITY
+    // 13) LOGIN MODAL
     // -------------------------------------------------------------
     signInButton.addEventListener("click", () => {
       const email = emailInput.value;
@@ -1286,7 +1278,7 @@
     });
 
     // -------------------------------------------------------------
-    // MODAL & SHARE FUNCTIONALITY
+    // 14) MODAL & SHARE
     // -------------------------------------------------------------
     closeModalButton.addEventListener("click", () => {
       completionModal.style.display = "none";
@@ -1302,69 +1294,12 @@
         alert("Result copied to clipboard!");
       }
     });
-    statsButton.addEventListener("click", () => {
-      statsModal.style.display = "flex";
-    });
     closeStatsButton.addEventListener("click", () => {
       statsModal.style.display = "none";
     });
 
     // -------------------------------------------------------------
-    // HINT FUNCTIONALITY
-    // -------------------------------------------------------------
-    let hintVisible = false;
-    hintOverlay.addEventListener("click", () => {
-      hintVisible = !hintVisible;
-      hintOverlay.style.opacity = hintVisible ? "0" : "1";
-    });
-
-    // -------------------------------------------------------------
-    // LEADERBOARD FUNCTIONS (Firebase Firestore)
-    // -------------------------------------------------------------
-    function submitScore(score) {
-      const todayDoc = todayStr;
-      db.collection("leaderboard")
-        .doc(todayDoc)
-        .collection("scores")
-        .add({
-          score: score,
-          uid: currentUser ? currentUser.uid : null,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-          console.log("Score submitted.");
-          loadLeaderboard();
-        })
-        .catch((error) => {
-          console.error("Error submitting score:", error);
-        });
-    }
-    function loadLeaderboard() {
-      const todayDoc = todayStr;
-      db.collection("leaderboard")
-        .doc(todayDoc)
-        .collection("scores")
-        .orderBy("score", "asc")
-        .limit(10)
-        .get()
-        .then((querySnapshot) => {
-          let leaderboardHTML = "<h3>Daily Leaderboard</h3><table><tr><th>Rank</th><th>Time</th></tr>";
-          let rank = 1;
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            leaderboardHTML += `<tr><td>${rank}</td><td>${formatTime(data.score)}</td></tr>`;
-            rank++;
-          });
-          leaderboardHTML += "</table>";
-          leaderboardContainer.innerHTML = leaderboardHTML;
-        })
-        .catch((error) => {
-          console.error("Error loading leaderboard:", error);
-        });
-    }
-
-    // -------------------------------------------------------------
-    // INITIALIZE PUZZLE
+    // 15) INITIALIZE PUZZLE
     // -------------------------------------------------------------
     function initPuzzle() {
       startTimer();
@@ -1373,74 +1308,12 @@
       const { pieces, piecesArray } = createPuzzlePieces(baseImageCanvas);
       scramblePieces(piecesArray);
       addDragAndDrop(piecesArray);
+      loadLeaderboard();
     }
+
     window.onload = () => {
       initPuzzle();
     };
-
-    // -------------------------------------------------------------
-    // USER STATISTICS FUNCTIONS
-    // -------------------------------------------------------------
-    function loadUserStats() {
-      if (!currentUser) return;
-      db.collection("users").doc(currentUser.uid).get().then((doc) => {
-        if (doc.exists) {
-          const data = doc.data();
-          statPlayed.textContent = data.played || 0;
-          statWinPercent.textContent = data.winPercent ? data.winPercent + "%" : "0%";
-          statCurrentStreak.textContent = data.currentStreak || 0;
-          statMaxStreak.textContent = data.maxStreak || 0;
-          if (data.currentStreak > 0) {
-            streakIndicator.style.display = "flex";
-            streakCount.textContent = data.currentStreak;
-          } else {
-            streakIndicator.style.display = "none";
-          }
-        } else {
-          statPlayed.textContent = "0";
-          statWinPercent.textContent = "0%";
-          statCurrentStreak.textContent = "0";
-          statMaxStreak.textContent = "0";
-          streakIndicator.style.display = "none";
-        }
-      }).catch((error) => {
-        console.error("Error loading user stats:", error);
-      });
-    }
-    function updateUserStats(totalTime) {
-      if (!currentUser) return;
-      const userRef = db.collection("users").doc(currentUser.uid);
-      userRef.get().then((doc) => {
-        let played = 0, wins = 0, currentStreak = 0, maxStreak = 0;
-        if (doc.exists) {
-          const data = doc.data();
-          played = data.played || 0;
-          wins = data.wins || 0;
-          currentStreak = data.currentStreak || 0;
-          maxStreak = data.maxStreak || 0;
-        }
-        played++;
-        wins++;
-        currentStreak++;
-        if (currentStreak > maxStreak) maxStreak = currentStreak;
-        const winPercent = Math.round((wins / played) * 100);
-        userRef.set({
-          played: played,
-          wins: wins,
-          currentStreak: currentStreak,
-          maxStreak: maxStreak,
-          winPercent: winPercent,
-          lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).then(() => {
-          loadUserStats();
-        }).catch((error) => {
-          console.error("Error updating user stats:", error);
-        });
-      }).catch((error) => {
-        console.error("Error reading user stats:", error);
-      });
-    }
-
   </script>
 </body>
 </html>
